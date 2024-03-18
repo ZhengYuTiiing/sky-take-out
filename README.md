@@ -8,7 +8,9 @@
 涉及到的技术栈如下：
 ![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/e19a26e2-6403-4e67-8c12-617e4d84a84a)
 
-## day01
+## day01 
+实现开发环境的搭建，导入已有的前端页面和基础框架。熟悉项目结构、按照数据库设计创建所需的数据库及数据、完善登录功能、学习Swagger、学习jwt令牌、将提供的项目接口导入YApi。
+
 ### 前端环境搭建
 首先，前端工程基于 nginx 运行，双击 nginx.exe 即可启动 nginx 服务，访问端口号为 80.
 
@@ -163,3 +165,21 @@ knife4j是为Java MVC框架集成Swagger生成Api文档的增强解决方案,前
 1、Yapi 是设计阶段使用的工具，管理和维护接口
 
 2、Swagger 在开发阶段使用的框架，帮助后端开发人员做后端的接口测试
+
+### 完善登录功能——MD5加密
+
+原本设计的员工表中的密码是明文存储，安全性太低。因此需要**使用MD5加密方式对明文密码加密**，加密后存储以提高安全性。
+- MD5 是什么？
+全称为 消息摘要算法版本5 （Message Digest Algorithm 5）它是一种 Hash 算法。作用是为了信息安全。
+
+再具体点，MD5 值就是一串 128 bit 的数据。**MD5 的核心是通过算法把任意长度的原始数据映射成128 bit 的数据。**MD5 的特点：
+
+不可逆性 --- 只能将明文进行加密得到密文，不能由密文算出原文。
+
+Spring提供了DigestUtild工具类
+```
+//进行md5加密，然后再进行比对password = DigestUtils.md5DigestAsHex(password.getBytes());if (!password.equals(employee.getPassword())) {    //密码错误  throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);}
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/8bd4338f-c7ea-4308-9b3e-1a9ffa6e5513)
+
+```
+ 
