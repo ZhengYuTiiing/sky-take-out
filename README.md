@@ -52,9 +52,6 @@ server{
 ```
 如上代码的含义是：监听80端口号， 然后当我们访问 http://localhost:80/api/../..这样的接口的时候，它会通过 location /api/ {} 这样的反向代理到 http://webservers/admin，根据webservers名称找到一组服务器，根据设置的负载均衡策略(默认是轮询)转发到具体的服务器。
 
-注：upstream后面的名称可自定义，但要上下保持一致。
-
-
 
 **nginx 负载均衡策略：**
 
@@ -161,7 +158,7 @@ knife4j是为Java MVC框架集成Swagger生成Api文档的增强解决方案,前
    接口文档访问路径为 http://ip:port/doc.html ---> http://localhost:8080/doc.html
 
 
-**思考：**通过 Swagger 就可以生成接口文档，那么我们就不需要 Yapi 了？
+**思考**:通过 Swagger 就可以生成接口文档，那么我们就不需要 Yapi 了？
 
 1、Yapi 是设计阶段使用的工具，管理和维护接口
 
