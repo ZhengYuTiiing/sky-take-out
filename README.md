@@ -178,8 +178,109 @@ knife4j是为Java MVC框架集成Swagger生成Api文档的增强解决方案,前
 
 Spring提供了DigestUtild工具类
 ```
-//进行md5加密，然后再进行比对password = DigestUtils.md5DigestAsHex(password.getBytes());if (!password.equals(employee.getPassword())) {    //密码错误  throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);}
-![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/8bd4338f-c7ea-4308-9b3e-1a9ffa6e5513)
-
+//进行md5加密，然后再进行比对
+password = DigestUtils.md5DigestAsHex(password.getBytes());
+if (!password.equals(employee.getPassword())) {  //密码错误
+  throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+}
 ```
- 
+## day02
+实现新增员工、员工分页查询、启用禁用员工账号、编辑员工、导入分类模块功能代码.其中分类模块与员工模块的内容几乎一致，因此直接导入提供好的代码。
+个人认为新增、分页查询、根据id删除、修改、启用禁用、根据类型查询都是对数据库的CRUD,并没有太大的难点，今日总结在开发过程中学习到的新知识。
+
+ ### 1.对象属性拷贝
+BeanUtils.copyProperties(employeeDTO, employee);
+
+BeanUtils提供对Java反射和自省API的包装。其主要目的是利用反射机制对JavaBean的属性进行处理。如果你有两个甚至需要很多个 具有很多相同属性的JavaBean，那创建时候不是要不断重复赋值，而我们使用 BeanUtils.copyProperties() 方法以后，代码量大大的减少，而且整体程序看着也简洁明朗。但要注意，有两个包下都有BeanUtils工具类，且方法的名称也相同都为copyProperties，但是赋值的方向不同。
+org.springframework.beans中的BeanUtils.copyProperties(A,B);是A中的值赋给B
+org.apache.commons.beanutils;BeanUtils.copyProperties(A,B);是B中的值赋给A
+
+### 2.异常处理器
+ Springboot对于异常的处理也做了不错的支持，集中的、统一的处理项目中出现的异常.它提供了一个 @ControllerAdvice注解以及 @ExceptionHandler注解，前者是用来开启全局的异常捕获，后者则是说明捕获哪些异常，对那些异常进行处理。
+```
+@ControllerAdvice
+public class MyExceptionHandler {
+    @ExceptionHandler(value =Exception.class)
+	public String exceptionHandler(Exception e){
+		System.out.println("发生了一个异常"+e);
+       	return e.getMessage();
+    }
+}
+```
+@RestControllerAdvice是一个组合注解，由@ControllerAdvice、@ResponseBody组成，而@ControllerAdvice继承了@Component，因此@RestControllerAdvice本质上是个Component，用于定义@ExceptionHandler
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/6912b4fc-6845-44a8-b8e1-28fcb6081556)
+
+### 3.ThreadLocal
+**介绍：**
+
+ThreadLocal 并不是一个Thread，而是Thread的局部变量。
+ThreadLocal为每个线程提供单独一份存储空间，具有线程隔离的效果，只有在线程内才能获取到对应的值，线程外则不能访问。
+
+**常用方法：**
+
+- public void set(T value) 	设置当前线程的线程局部变量的值
+- public T get() 		返回当前线程所对应的线程局部变量的值
+- public void remove()        移除当前线程的线程局部变量
+
+  在本项目中，可以在解析jwt令牌时获取当前登录员工id，并。用BaseContext工具类中的setCurrentId方法（底层调用了threadlocal的set方法）放入线程局部变量中，之后在修改操作时(BaseContext.getCurrentId()）取出即可。
+
+### 4.消息转换器
+
+在开发过程中发现，时间字段显示有问题，没有按照"yyyy-MM-dd HH:mm"的格式显示。
+**解决方式：**  
+**1).  方式一**  
+在属性上加上注解，对日期进行格式化  
+```
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updateTime;
+```
+但这种方式，需要在每个时间属性上都要加上该注解，使用较麻烦，不能全局处理。
+**2).  方式二（推荐)消息转换器**  
+在WebMvcConfiguration中扩展SpringMVC的消息转换器，统一对日期类型进行格式处理
+```java
+	/**
+     * 扩展Spring MVC框架的消息转化器
+     * @param converters
+     */
+    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        log.info("扩展消息转换器...");
+        //创建一个消息转换器对象
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        //需要为消息转换器设置一个对象转换器，对象转换器可以将Java对象序列化为json数据
+        converter.setObjectMapper(new JacksonObjectMapper());
+        //将自己的消息转化器加入容器中
+        converters.add(0,converter);
+    }
+```
+时间格式定义，sky-common模块中
+```java
+package com.sky.json;
+public class JacksonObjectMapper extends ObjectMapper {
+	//.......
+    public static final String DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm";
+    //.......
+    }
+}
+```
+对象映射器:基于jackson将Java对象转为json，或者将json转为Java对象  
+将JSON解析为Java对象的过程称为 [从JSON反序列化Java对象]  
+从Java对象生成JSON的过程称为 [序列化Java对象到JSON]  
+
+### 5.builder  
+创建对象的另一种方式，按照传统的new一个对象，之后用set方法给属性赋值。但是如果类的属性很多，那么代码会很繁杂。
+
+在类上添加@Builder注解，那么在创建对象时，可以使用链式代码，看起来更简洁。
+```
+/*      Employee employee=new Employee();
+        employee.setId(id);
+        employee.setStatus(status);*/
+
+        Employee employee = Employee.builder()
+                .status(status)
+                .id(id)
+                .build();
+```
+
+### 6.PageHelper
