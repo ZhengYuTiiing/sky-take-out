@@ -94,7 +94,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeMapper.insert(employee);//后续步骤定义
     };
 
-
+    /**
+     * 分页查询
+     *
+     * @param employeePageQueryDTO
+     * @return
+     */
     public PageResult pageQuary(EmployeePageQueryDTO employeePageQueryDTO) {
         //开始分页查询,g告诉PageHelper要吃第几页，每页几条。动态的把limit拼接在sql语句之后。自己还是要写基础的sql
         PageHelper.startPage(employeePageQueryDTO.getPage(),employeePageQueryDTO.getPageSize());
@@ -102,5 +107,21 @@ public class EmployeeServiceImpl implements EmployeeService {
         long total = page.getTotal();
         List<Employee> records = page.getResult();
         return  new PageResult(total, records);
+    }
+
+    /**
+     * 启用禁用员工账号
+     * @param status
+     * @param id
+     */
+    public void startOrStop(Integer status, Long id) {
+/*        Employee employee=new Employee();
+        employee.setId(id);
+        employee.setStatus(status);*/
+        Employee employee = Employee.builder()
+                .status(status)
+                .id(id)
+                .build();
+        employeeMapper.update(employee);
     }
 }
