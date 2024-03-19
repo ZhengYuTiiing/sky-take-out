@@ -225,9 +225,62 @@ ThreadLocal为每个线程提供单独一份存储空间，具有线程隔离的
   在本项目中，可以在解析jwt令牌时获取当前登录员工id，并。用BaseContext工具类中的setCurrentId方法（底层调用了threadlocal的set方法）放入线程局部变量中，之后在修改操作时(BaseContext.getCurrentId()）取出即可。
 
 ### 4.消息转换器
+
+在开发过程中发现，时间字段显示有问题，没有按照"yyyy-MM-dd HH:mm"的格式显示。
+**解决方式：**  
+**1).  方式一**  
+在属性上加上注解，对日期进行格式化  
+```
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updateTime;
+```
+但这种方式，需要在每个时间属性上都要加上该注解，使用较麻烦，不能全局处理。
+**2).  方式二（推荐)消息转换器**  
+在WebMvcConfiguration中扩展SpringMVC的消息转换器，统一对日期类型进行格式处理
+```java
+	/**
+     * 扩展Spring MVC框架的消息转化器
+     * @param converters
+     */
+    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        log.info("扩展消息转换器...");
+        //创建一个消息转换器对象
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        //需要为消息转换器设置一个对象转换器，对象转换器可以将Java对象序列化为json数据
+        converter.setObjectMapper(new JacksonObjectMapper());
+        //将自己的消息转化器加入容器中
+        converters.add(0,converter);
+    }
+```
+时间格式定义，sky-common模块中
+```java
+package com.sky.json;
+public class JacksonObjectMapper extends ObjectMapper {
+	//.......
+    public static final String DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm";
+    //.......
+    }
+}
+```
 对象映射器:基于jackson将Java对象转为json，或者将json转为Java对象  
 将JSON解析为Java对象的过程称为 [从JSON反序列化Java对象]  
 从Java对象生成JSON的过程称为 [序列化Java对象到JSON]  
-   
-### 5.builder
+
+### 5.builder  
+创建对象的另一种方式，按照传统的new一个对象，之后用set方法给属性赋值。但是如果类的属性很多，那么代码会很繁杂。
+
+在类上添加@Builder注解，那么在创建对象时，可以使用链式代码，看起来更简洁。
+```
+/*      Employee employee=new Employee();
+        employee.setId(id);
+        employee.setStatus(status);*/
+
+        Employee employee = Employee.builder()
+                .status(status)
+                .id(id)
+                .build();
+```
+
 ### 6.PageHelper
