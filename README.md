@@ -178,8 +178,41 @@ knife4j是为Java MVC框架集成Swagger生成Api文档的增强解决方案,前
 
 Spring提供了DigestUtild工具类
 ```
-//进行md5加密，然后再进行比对password = DigestUtils.md5DigestAsHex(password.getBytes());if (!password.equals(employee.getPassword())) {    //密码错误  throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);}
-![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/8bd4338f-c7ea-4308-9b3e-1a9ffa6e5513)
-
+//进行md5加密，然后再进行比对
+password = DigestUtils.md5DigestAsHex(password.getBytes());
+if (!password.equals(employee.getPassword())) {  //密码错误
+  throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+}
 ```
- 
+## day02
+ 新增员工、员工分页查询、启用禁用员工账号、编辑员工、导入分类模块功能代码.其中分类模块与员工模块的内容几乎一致，因此直接导入提供好的代码。
+ 个人认为新增、分页查询、根据id删除、修改、启用禁用、根据类型查询都是对数据库的CRUD,并没有太大的难点，今日总结在开发过程中学习到的新知识
+ ### 1.对象属性拷贝
+BeanUtils.copyProperties(employeeDTO, employee);
+
+BeanUtils提供对Java反射和自省API的包装。其主要目的是利用反射机制对JavaBean的属性进行处理。如果你有两个甚至需要很多个 具有很多相同属性的JavaBean，那创建时候不是要不断重复赋值，而我们使用 BeanUtils.copyProperties() 方法以后，代码量大大的减少，而且整体程序看着也简洁明朗。但要注意，有两个包下都有BeanUtils工具类，且方法的名称也相同都为copyProperties，但是赋值的方向不同。
+package org.springframework.beans;中的
+BeanUtils.copyProperties(A,B);
+是A中的值赋给B
+package org.apache.commons.beanutils;
+BeanUtils.copyProperties(A,B);
+是B中的值赋给A
+
+### 2.异常处理器
+ Springboot对于异常的处理也做了不错的支持，集中的、统一的处理项目中出现的异常.它提供了一个 @ControllerAdvice注解以及 @ExceptionHandler注解，前者是用来开启全局的异常捕获，后者则是说明捕获哪些异常，对那些异常进行处理。
+```
+@ControllerAdvice
+public class MyExceptionHandler {
+
+    @ExceptionHandler(value =Exception.class)
+	public String exceptionHandler(Exception e){
+		System.out.println("发生了一个异常"+e);
+       	return e.getMessage();
+    }
+}
+```
+
+### 3.ThreadLocal
+### 4.消息转换器
+### 5.builder
+### 6.PageHelper
