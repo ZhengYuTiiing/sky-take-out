@@ -284,3 +284,16 @@ public class JacksonObjectMapper extends ObjectMapper {
 ```
 
 ### 6.PageHelper
+PageHelper是一款好用的开源免费的Mybatis第三方物理分页插件，大致理解为该插件可以在你的sql语句后面加上limit，你只需要告诉PageHelper要查第几页，每页几条数据。
+sql语句最后的limit几到几插件帮你生成，就不需要自己计算了。
+```
+    public PageResult pageQuary(EmployeePageQueryDTO employeePageQueryDTO) {
+        //开始分页查询,告诉PageHelper要查第几页，每页几条。动态的把limit拼接在sql语句之后。自己还是要写基础的sql
+        PageHelper.startPage(employeePageQueryDTO.getPage(),employeePageQueryDTO.getPageSize());
+        //这个返回值必须是Page<E>
+        Page<Employee> page=employeeMapper.pageQuery(employeePageQueryDTO);
+        long total = page.getTotal();
+        List<Employee> records = page.getResult();
+        return  new PageResult(total, records);
+    }
+```
