@@ -1,6 +1,7 @@
 package com.sky.controller.admin;
 
 import com.sky.constant.JwtClaimsConstant;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
@@ -76,4 +77,13 @@ public class EmployeeController {
         return Result.success();
     }
 
+
+    @PostMapping
+    @ApiOperation("新增员工")
+    public Result save(@RequestBody EmployeeDTO employeeDTO){
+        System.out.println("当前线程的id:"+Thread.currentThread().getId());
+        log.info("新增员工：{}",employeeDTO);
+        employeeService.save(employeeDTO);//该方法后续步骤会定义
+        return Result.success();
+    }
 }
