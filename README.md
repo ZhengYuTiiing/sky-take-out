@@ -336,4 +336,49 @@ public @interface AutoFill {
     OperationType value();
 }
 ```
-**反射**
+**反射**  
+    在通知中，需要获取得到对象，得到setter方法,调用setter方法为对象属性赋值，这时就需要用到反射机制。  
+**getDeclaredMethod(autoMatchConfig.getMethodName(), Integer.class)**
+其中，传入的第一个参数是方法名，第二个参数名是方法参数，传入这两个参数之后，便可以根据方法名和方法参数通过反射获取带有参数的方法.然后 **MethodName.invoke(subjectService, GlobalConfig.OPEN_TO_IPLAN)**
+其中，invoke方法中传入的是上一步获取到的方法的实例对象和方法传入的实参
+
+由此，通过反射获取方法名和参数名，然后invoke方法注入方法对象和实参，
+getDeclaredMethod：返回Method方法对象；
+invoke：根据传入的对象实例，通过配置的实参参数来调用方法
+```
+  Method setCreateTime = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_CREATE_TIME, LocalDateTime.class);
+  Method setCreateUser = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_CREATE_USER, Long.class);
+  Method setUpdateTime = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_UPDATE_TIME, LocalDateTime.class);
+  Method setUpdateUser = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_UPDATE_USER, Long.class);
+ //通过反射为对象属性赋值
+ setCreateTime.invoke(entity,now);
+ setCreateUser.invoke(entity,currentId);
+ setUpdateTime.invoke(entity,now);
+ setUpdateUser.invoke(entity,currentId);
+```
+## 2.文件上传
+因为在新增菜品时，需要上传菜品对应的图片(文件)，包括后绪其它功能也会使用到文件上传，故要实现通用的文件上传接口。我使用使用第三方的存储服务（阿里云OSS）
+1. 优点：开发简单，拥有强大功能，免维护
+2. 缺点：付费 
+
+这样，服务端将前端上传的图片传到阿里云上，再将阿里云提供的url返回给前端、存入数据库。此后就可以访问url得到图片，这样前端就可以使用。
+
+**使用阿里云OSS**  
+具体如何使用OSS服务，阿里云官网上有详细的教程https://help.aliyun.com/zh/oss/developer-reference/getting-started?spm=a2c4g.11186623.0.i7  
+简单的说，需要一下几步
+- 注册阿里云账号: 如果您还没有阿里云账号，请先注册一个账号，并开通 OSS 服务。
+- 创建 OSS Bucket: 登录阿里云控制台，在 OSS 控制台中创建一个 Bucket，用于存储上传的文件。Bucket实质就是阿里云OSS对象存储的一个存储空间
+- 获取 Access Key: 在阿里云控制台获取 Access Key ID 和 Access Key Secret，这将用于身份验证和访问控制。
+- 在Maven中引用依赖
+- 构建OSSClient实例，上传文件
+
+### 3.MultipartFile
+MultipartFile 接口是 Spring Framework 中用于处理文件上传的核心接口，它抽象了客户端上传的文件，使开发者可以轻松处理上传的文件内容和元数据。
+
+
+以下是一些常见的 MultipartFile 接口操作： 
+
+- 获取文件名和大小：使用 getOriginalFilename() 方法获取上传的文件名，使用 getSize() 方法获取文件大小。
+- 获取文件类型：使用 getContentType() 方法获取上传文件的 MIME 类型。
+- 获取字节数据：使用 getBytes() 方法获取文件的字节数组。 
+- 保存文件：使用 transferTo() 方法将文件保存到指定位置。
