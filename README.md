@@ -297,3 +297,43 @@ sql语句最后的limit几到几插件帮你生成，就不需要自己计算了
         return  new PageResult(total, records);
     }
 ```
+## day03
+实现：公共字段自动填充、新增菜品、菜品分页查询、删除菜品、修改菜品  
+### 1.公共字段自动填充功能
+**AOP面向切面编程思想**  
+在新增修改员工、新增修改菜品时，我们需要重复的去获取时间获取当前用户。
+```
+        category.setCreateTime(LocalDateTime.now());
+        category.setUpdateTime(LocalDateTime.now());
+        category.setCreateUser(BaseContext.getCurrentId());
+        category.setUpdateUser(BaseContext.getCurrentId());
+```
+需要在每一个业务方法中进行操作, 编码相对冗余、繁琐。 我们使用AOP切面编程，实现功能增强，来完成公共字段自动填充功能。
+自定义切面类，类中定义切入点和通知。注意切面类上应有@Aspect 、@Component注解。  
+```
+@Aspect
+@Component
+@Slf4j
+public class AutoFillAspect {
+
+    @Pointcut("execution(* com.sky.mapper.*.*(..)) && @annotation(com.sky.annotation.AutoFill)")
+    public void autoFillPointCut(){}
+
+    @Before("autoFillPointCut()")
+    public void autoFill(JoinPoint joinPoint){
+        ...
+    }
+}
+```
+**自定义注解**  
+@Target – 注解用于什么地方
+@Retention – 什么时候使用该注解，通过@Retention定义注解的生命周期，RetentionPolicy.RUNTIME : 始终不会丢弃，可以使用反射获得该注解的信息。自定义的注解最常用的使用方式。
+```
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AutoFill {
+    //数据库操作类型：UPDATE INSERT
+    OperationType value();
+}
+```
+**反射**
