@@ -382,3 +382,10 @@ MultipartFile 接口是 Spring Framework 中用于处理文件上传的核心接
 - 获取文件类型：使用 getContentType() 方法获取上传文件的 MIME 类型。
 - 获取字节数据：使用 getBytes() 方法获取文件的字节数组。 
 - 保存文件：使用 transferTo() 方法将文件保存到指定位置。
+
+**Mybatis 参数**   
+parameterType="Setmeal" :  接口中方法参数的类型。<select>,<insert>,<update>,<delete>都可以使用 parameterType 指定类型。  
+useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 insert 语句生效，默认为 false。当设置为 true 时，表示如果插入的表以自增列为主键，则允许 JDBC 支持自动生成主键，并可将自动生成的主键返回。1.keyProperty中对应的值是实体类的属性，而不是数据库的字段。
+2.添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。
+![img.png](img.png)
+
