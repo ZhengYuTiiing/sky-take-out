@@ -389,3 +389,49 @@ useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 ins
 2.添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。
 ![img.png](img.png)
 
+## Day05
+### 1.Redis
+Redis是一个基于**内存**的**key-value**结构数据库。Redis 是互联网技术领域使用最为广泛的存储中间件。
+Mysql是基于磁盘的
+
+主要特点：
+• 基于内存存储，读写性能高
+• 适合存储热点数据（热点商品、资讯、新闻），某一时间点有大量数据去访问
+• 企业应用广泛
+•
+Redis是用C语言开发的一个开源的高性能键值对(key-value)数据库，官方提供的数据是可以达到100000+的QPS（每秒内查询次数）。它存储的value类型比较丰富，也被称为结构化的NoSql数据库。
+NoSql（Not Only SQL），不仅仅是SQL，泛指非关系型数据库。NoSql数据库并不是要取代关系型数据库，而是关系型数据库的补充。
+关系型数据库(RDBMS)：
+• Mysql
+• Oracle
+• DB2
+• SQLServer
+非关系型数据库(NoSql)：
+• Redis
+• Mongo db
+• MemCached
+
+1.3 Redis服务启动与停止
+以window版Redis进行演示：
+1.3.1 服务启动命令
+redis-server.exe redis.windows.conf
+Redis服务默认端口号为 6379 ，通过快捷键Ctrl + C 即可停止Redis服务
+当Redis服务启动成功后，可通过客户端进行连接。
+1.3.2 客户端连接命令
+redis-cli.exe
+通过redis-cli.exe命令默认连接的是本地的redis服务，并且使用默认6379端口。也可以通过指定如下参数连接：
+• -h ip地址
+• -p 端口号
+• -a 密码（如果需要）
+1.3.3 修改Redis配置文件
+设置Redis服务密码，修改redis.windows.conf
+requirepass 123456
+注意：
+• 修改密码后需要重启Redis服务才能生效
+• Redis配置文件中 # 表示注释
+重启Redis后，再次连接Redis时，需加上密码，否则连接失败。
+redis-cli.exe -h localhost -p 6379 -a zyt1566585M
+
+此时，-h 和 -p 参数可省略不写。
+
+
