@@ -384,9 +384,320 @@ MultipartFile 接口是 Spring Framework 中用于处理文件上传的核心接
 - 保存文件：使用 transferTo() 方法将文件保存到指定位置。
 
 **Mybatis 参数**   
-parameterType="Setmeal" :  接口中方法参数的类型。<select>,<insert>,<update>,<delete>都可以使用 parameterType 指定类型。  
-useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 insert 语句生效，默认为 false。当设置为 true 时，表示如果插入的表以自增列为主键，则允许 JDBC 支持自动生成主键，并可将自动生成的主键返回。1.keyProperty中对应的值是实体类的属性，而不是数据库的字段。
-2.添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。  
+parameterType="Setmeal" :  接口中方法参数的类型。select,insert,update,delete都可以使用 parameterType 指定类型。  
+useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 insert 语句生效，默认为 false。当设置为 true 时，表示如果插入的表以自增列为主键，则允许 JDBC 支持自动生成主键，并可将自动生成的主键返回。1.keyProperty中对应的值是实体类的属性，而不是数据库的字段。  
+添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。    
 
 ## day05
+day04完成套餐管理模块所有业务功能，包括:新增套餐、套餐分页查询、 删除套餐、 修改套餐、 起售停售套餐。  
+今日主要是对Redis有了基本的认识。
+### 1.Redis入门
+Redis是一个基于**内存**的key-value结构数据库。Redis 是互联网技术领域使用最为广泛的**存储中间件**。Mysql是基于磁盘的。  
+**主要特点：**  
+- 基于内存存储，读写性能高  
+- 适合存储热点数据（热点商品、资讯、新闻）
+- 企业应用广泛
+
+Redis是用C语言开发的一个开源的高性能键值对(key-value)数据库，官方提供的数据是可以达到100000+的QPS（每秒内查询次数）。它存储的value类型比较丰富，也被称为结构化的NoSql数据库。
+
+NoSql（Not Only SQL），不仅仅是SQL，泛指**非关系型数据库**。NoSql数据库并不是要取代关系型数据库，而是关系型数据库的补充。
+
+**关系型数据库(RDBMS)：**
+
+- Mysql
+- Oracle
+- DB2
+- SQLServer
+
+**非关系型数据库(NoSql)：**
+
+- Redis
+- Mongo db
+- MemCached
+
+### Redis服务启动与停止（window版） 
+服务启动命令：**redis-server.exe redis.windows.conf**  
+Redis服务默认端口号为 **6379** ，通过快捷键**Ctrl + C** 即可停止Redis服务，当Redis服务启动成功后，可通过客户端进行连接。  
+
+客户端连接命令：**redis-cli.exe**
+
+通过redis-cli.exe命令默认连接的是本地的redis服务，并且使用默认6379端口。也可以通过指定如下参数连接：
+
+- -h ip地址
+- -p 端口号
+- -a 密码（如果需要）
+
+#### 1.3.3 修改Redis配置文件
+
+设置Redis服务密码，修改redis.windows.conf
+
+```
+requirepass 123456
+```
+
+**注意：**
+
+- 修改密码后需要重启Redis服务才能生效
+- Redis配置文件中 # 表示注释
+
+重启Redis后，再次连接Redis时，需加上密码，否则连接失败。
+
+```
+redis-cli.exe -h localhost -p 6379 -a 123456
+```
+![1](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/25e4c9fd-b2a3-4800-a1b4-00a428727cec)
+
+
+此时，-h 和 -p 参数可省略不写。
+
+![2](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/cd334b1d-c8c0-410b-9925-70432c6ef4cc)
+
+
+
+
+### 2.Redis数据类型
+
+**五种常用数据类型介绍**
+
+Redis存储的是key-value结构的数据，其中key是字符串类型，value有5种常用的数据类型：
+
+- 字符串 string
+- 哈希 hash
+- 列表 list
+- 集合 set
+- 有序集合 sorted set / zset
+
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/dbe5d795-dff7-4476-acaa-b42633a419d8)
+
+
+**解释说明：**
+
+- 字符串(string)：普通字符串，Redis中最简单的数据类型
+- 哈希(hash)：也叫散列，类似于Java中的HashMap结构
+- 列表(list)：按照插入顺序排序，可以有重复元素，类似于Java中的LinkedList
+- 集合(set)：无序集合，没有重复元素，类似于Java中的HashSet
+- 有序集合(sorted set/zset)：集合中每个元素关联一个分数(score)，根据分数升序排序，没有重复元素
+
+
+
+### 3. Redis常用命令
+
+#### 3.1 字符串操作命令
+
+Redis 中字符串类型常用命令：
+
+- **SET** key value 					         设置指定key的值
+- **GET** key                                        获取指定key的值
+- **SETEX** key seconds value         设置指定key的值，并将 key 的过期时间设为 seconds 秒
+- **SETNX** key value                        只有在 key    不存在时设置 key 的值
+
+更多命令可以参考Redis中文网：https://www.redis.net.cn
+
+
+#### 3.2 哈希操作命令
+
+Redis hash 是一个string类型的 field 和 value 的映射表，hash特别适合用于存储对象，常用命令：
+
+- **HSET** key field value             将哈希表 key 中的字段 field 的值设为 value
+- **HGET** key field                       获取存储在哈希表中指定字段的值
+- **HDEL** key field                       删除存储在哈希表中的指定字段
+- **HKEYS** key                              获取哈希表中所有字段
+- **HVALS** key                              获取哈希表中所有值
+
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/9e1dfce4-106e-4af8-8b81-6318f2fc57ad)
+
+
+
+#### 3.3 列表操作命令
+
+Redis 列表是简单的字符串列表，按照插入顺序排序，常用命令：
+
+- **LPUSH** key value1 [value2]         将一个或多个值插入到列表头部
+- **LRANGE** key start stop                获取列表指定范围内的元素
+- **RPOP** key                                       移除并获取列表最后一个元素
+- **LLEN** key                                        获取列表长度
+- **BRPOP** key1 [key2 ] timeout       移出并获取列表的最后一个元素， 如果列表没有元素会阻塞列表直到等待超    时或发现可弹出元素为止
+
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/849beb7c-9109-4304-a7d1-7c9366a08d3b)
+
+
+
+
+#### 3.4 集合操作命令
+
+Redis set 是string类型的无序集合。集合成员是唯一的，这就意味着集合中不能出现重复的数据，常用命令：
+
+- **SADD** key member1 [member2]            向集合添加一个或多个成员
+- **SMEMBERS** key                                         返回集合中的所有成员
+- **SCARD** key                                                  获取集合的成员数
+- **SINTER** key1 [key2]                                   返回给定所有集合的交集
+- **SUNION** key1 [key2]                                 返回所有给定集合的并集
+- **SREM** key member1 [member2]            移除集合中一个或多个成员
+
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/0ecbd78f-0af3-498f-b114-90567f2d9383)
+
+
+
+
+#### 3.5 有序集合操作命令
+
+Redis有序集合是string类型元素的集合，且不允许有重复成员。每个元素都会关联一个double类型的分数。常用命令：  
+常用命令： 
+- **ZADD** key score1 member1 [score2 member2]     向有序集合添加一个或多个成员
+- **ZRANGE** key start stop [WITHSCORES]                     通过索引区间返回有序集合中指定区间内的成员
+- **ZINCRBY** key increment member                              有序集合中对指定成员的分数加上增量 increment
+- **ZREM** key member [member ...]                                移除有序集合中的一个或多个成员
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/645d8356-ca1d-4b2a-a1ff-b5b3f3ec9e9c)
+#### 3.6 通用命令
+
+Redis的通用命令是不分数据类型的，都可以使用的命令：
+
+- KEYS pattern 		查找所有符合给定模式( pattern)的 key 
+- EXISTS key 		检查给定 key 是否存在
+- TYPE key 		返回 key 所储存的值的类型
+- DEL key 		该命令用于在 key 存在是删除 key
+
+
+### 4.在Java中操作Redis
+**Spring Data Redis** 是 Spring 的一部分，提供了在 Spring 应用中通过简单的配置就可以访问 Redis 服务，对 Redis 底层开发包进行了高度封装。在 Spring 项目中，可以使用Spring Data Redis来简化 Redis 操作。  
+#### Spring Data Redis环境搭建
+进入到sky-server模块
+**1). 导入Spring Data Redis的maven坐标**
+```xml
+<dependency>
+     <groupId>org.springframework.boot</groupId>
+     <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+**2). 配置Redis数据源**
+在application-dev.yml中添加
+```yaml
+sky:
+  redis:
+    host: localhost
+    port: 6379
+    password: 123456
+    database: 10
+```
+**解释说明：**  
+database:指定使用Redis的哪个数据库，Redis服务启动后默认有16个数据库，编号分别是从0到15。可以通过修改Redis配置文件来指定数据库的数量。  
+在application.yml中添加读取application-dev.yml中的相关Redis配置
+```yaml
+spring:
+  profiles:
+    active: dev
+  redis:
+    host: ${sky.redis.host}
+    port: ${sky.redis.port}
+    password: ${sky.redis.password}
+    database: ${sky.redis.database}
+```
+
+**3). 编写配置类，创建RedisTemplate对象**
+
+```java
+package com.sky.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+@Configuration
+@Slf4j
+public class RedisConfiguration {
+
+    @Bean
+    public RedisTemplate redisTemplate(RedisConnectionFactory redisConnectionFactory){
+        log.info("开始创建redis模板对象...");
+        RedisTemplate redisTemplate = new RedisTemplate();
+        //设置redis的连接工厂对象
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        //设置redis key的序列化器
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        return redisTemplate;
+    }
+}
+```
+
+**解释说明：**
+
+当前配置类不是必须的，因为 Spring Boot 框架会自动装配 RedisTemplate 对象，但是默认的key序列化器为
+
+JdkSerializationRedisSerializer，导致我们存到Redis中后的数据和原始数据有差别，故设置为
+
+StringRedisSerializer序列化器。
+
+
+
+**4). 通过RedisTemplate对象操作Redis**
+
+在test下新建测试类
+
+```java
+package com.sky.test;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.*;
+
+@SpringBootTest
+public class SpringDataRedisTest {
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Test
+    public void testRedisTemplate(){
+        System.out.println(redisTemplate);
+        //string数据操作
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        //hash类型的数据操作
+        HashOperations hashOperations = redisTemplate.opsForHash();
+        //list类型的数据操作
+        ListOperations listOperations = redisTemplate.opsForList();
+        //set类型数据操作
+        SetOperations setOperations = redisTemplate.opsForSet();
+        //zset类型数据操作
+        ZSetOperations zSetOperations = redisTemplate.opsForZSet();
+    }
+}
+```
+操作字符串类型数据用ValueOperations、操作哈希类型数据用HashOperations、操作列表类型数据用ListOperations、操作集合类型数据用SetOperations、操作有序集合类型数据用ZSetOperations、通用命令操作用redisTemplate  
+
+## day06 
+今日第一次接触小程序开发，但是这并不是本项目的重点，只是了解。今日实现微信登录功能、导入商品浏览功能代码。
+
+### 1. HttpClient
+HttpClient 是Apache Jakarta Common 下的子项目，可以用来提供高效的、最新的、功能丰富的支持 HTTP 协议的客户端编程工具包，并且它支持 HTTP 协议最新的版本和建议。简单地说，它可以在Java程序中发送http请求。
+
+### 2.微信小程序开发
+开发微信小程序之前需要注册小程序（在微信公众平台）、完善小程序信息（记录下小程序的 AppID）、下载开发者工具用于开发。   
+入开发微信小程序，本质上是属于前端的开发，我们的重点其实还是后端代码开发。所以，小程序的代码已经提供好了，直接导入到微信开发者工具当中，直接来使用就可以了。
+
+### 3. 微信登录流程
+**流程图：**
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/cfc25b77-71d9-4392-874c-d65dc5870701)
+
+
+
+**步骤分析：**
+
+1. 小程序端，调用wx.login()获取code，就是授权码。
+2. 小程序端，调用wx.request()发送请求并携带code，请求开发者服务器(自己编写的后端服务)。
+3. 开发者服务端，通过HttpClient向微信接口服务发送请求，并携带appId+appsecret+code三个参数。
+4. 开发者服务端，接收微信接口服务返回的数据，session_key+opendId等。opendId是微信用户的唯一标识。
+5. 开发者服务端，自定义登录态，生成令牌(token)和openid等数据返回给小程序端，方便后绪请求身份校验。
+6. 小程序端，收到自定义登录态，存储storage。
+7. 小程序端，后绪通过wx.request()发起业务请求时，携带token。
+8. 开发者服务端，收到请求后，通过携带的token，解析当前登录用户的id。
+9. 开发者服务端，身份校验通过后，继续相关的业务逻辑处理，最终返回业务数据。
+
+**说明：**
+
+1. 调用 [wx.login()](https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.login.html) 获取 **临时登录凭证code** ，并回传到开发者服务器。
+2. 调用 [auth.code2Session](https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html) 接口，换取 **用户唯一标识 OpenID** 、 用户在微信开放平台帐号下的**唯一标识UnionID**（若当前小程序已绑定到微信开放平台帐号） 和 **会话密钥 session_key**。
+
 
