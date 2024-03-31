@@ -695,7 +695,7 @@ HttpClient 是Apache Jakarta Common 下的子项目，可以用来提供高效�
 8. 开发者服务端，收到请求后，通过携带的token，解析当前登录用户的id。
 9. 开发者服务端，身份校验通过后，继续相关的业务逻辑处理，最终返回业务数据。
 
-10. **说明：**
+**说明：**
 
 1. 调用 [wx.login()](https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.login.html) 获取 **临时登录凭证code** ，并回传到开发者服务器。
 2. 调用 [auth.code2Session](https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html) 接口，换取 **用户唯一标识 OpenID** 、 用户在微信开放平台帐号下的**唯一标识UnionID**（若当前小程序已绑定到微信开放平台帐号） 和 **会话密钥 session_key**。
