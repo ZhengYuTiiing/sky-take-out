@@ -389,6 +389,7 @@ useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 ins
 添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。    
 
 ## day05
+day04完成套餐管理模块所有业务功能，包括:新增套餐、套餐分页查询、 删除套餐、 修改套餐、 起售停售套餐。  
 今日主要是对Redis有了基本的认识。
 ### 1.Redis入门
 Redis是一个基于**内存**的key-value结构数据库。Redis 是互联网技术领域使用最为广泛的**存储中间件**。Mysql是基于磁盘的。  
