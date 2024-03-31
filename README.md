@@ -389,6 +389,7 @@ useGeneratedKeys="true" keyProperty="id":   useGeneratedKeys 参数只针对 ins
 添加该属性之后并非改变insert方法的返回值，也就是说，该方法还是返回新增的结果。而如果需要获取新增行的主键ID，直接使用传入的实体对象的主键对应属性的值。    
 
 ## day05
+今日主要是对Redis有了基本的认识。
 ### 1.Redis入门
 Redis是一个基于**内存**的key-value结构数据库。Redis 是互联网技术领域使用最为广泛的**存储中间件**。Mysql是基于磁盘的。  
 **主要特点：**  
@@ -663,4 +664,39 @@ public class SpringDataRedisTest {
     }
 }
 ```
-操作字符串类型数据用ValueOperations、操作哈希类型数据用HashOperations、操作列表类型数据用ListOperations、操作集合类型数据用SetOperations、操作有序集合类型数据用ZSetOperations、通用命令操作用redisTemplate
+操作字符串类型数据用ValueOperations、操作哈希类型数据用HashOperations、操作列表类型数据用ListOperations、操作集合类型数据用SetOperations、操作有序集合类型数据用ZSetOperations、通用命令操作用redisTemplate  
+
+## day06 
+今日第一次接触小程序开发，但是这并不是本项目的重点，只是了解。今日实现微信登录功能、导入商品浏览功能代码。
+
+### 1. HttpClient
+HttpClient 是Apache Jakarta Common 下的子项目，可以用来提供高效的、最新的、功能丰富的支持 HTTP 协议的客户端编程工具包，并且它支持 HTTP 协议最新的版本和建议。简单地说，它可以在Java程序中发送http请求。
+
+### 2.微信小程序开发
+开发微信小程序之前需要注册小程序（在微信公众平台）、完善小程序信息（记录下小程序的 AppID）、下载开发者工具用于开发。   
+入开发微信小程序，本质上是属于前端的开发，我们的重点其实还是后端代码开发。所以，小程序的代码已经提供好了，直接导入到微信开发者工具当中，直接来使用就可以了。
+
+### 3. 微信登录流程
+**流程图：**
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/cfc25b77-71d9-4392-874c-d65dc5870701)
+
+
+
+**步骤分析：**
+
+1. 小程序端，调用wx.login()获取code，就是授权码。
+2. 小程序端，调用wx.request()发送请求并携带code，请求开发者服务器(自己编写的后端服务)。
+3. 开发者服务端，通过HttpClient向微信接口服务发送请求，并携带appId+appsecret+code三个参数。
+4. 开发者服务端，接收微信接口服务返回的数据，session_key+opendId等。opendId是微信用户的唯一标识。
+5. 开发者服务端，自定义登录态，生成令牌(token)和openid等数据返回给小程序端，方便后绪请求身份校验。
+6. 小程序端，收到自定义登录态，存储storage。
+7. 小程序端，后绪通过wx.request()发起业务请求时，携带token。
+8. 开发者服务端，收到请求后，通过携带的token，解析当前登录用户的id。
+9. 开发者服务端，身份校验通过后，继续相关的业务逻辑处理，最终返回业务数据。
+
+10. **说明：**
+
+1. 调用 [wx.login()](https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.login.html) 获取 **临时登录凭证code** ，并回传到开发者服务器。
+2. 调用 [auth.code2Session](https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html) 接口，换取 **用户唯一标识 OpenID** 、 用户在微信开放平台帐号下的**唯一标识UnionID**（若当前小程序已绑定到微信开放平台帐号） 和 **会话密钥 session_key**。
+
+
