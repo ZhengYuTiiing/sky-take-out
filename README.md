@@ -721,3 +721,34 @@ HttpClient 是Apache Jakarta Common 下的子项目，可以用来提供高效�
 
 先操作数据库：可以保证最终数据一致性，建议先操作数据库，然后删除Redis缓存
 ![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/8c354ae3-6479-4866-9853-47fb5dc4057d)
+
+### 2.Spring Cache
+Spring Cache 是一个框架，实现了基于注解的缓存功能，只需要简单地加一个注解，就能实现缓存功能。Spring Cache 提供了一层抽象，底层可以切换不同的缓存实现，例如：
+- EHCache
+- Caffeine
+- Redis(常用)
+- **起步依赖：**
+
+```xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-cache</artifactId>  		            		       	 <version>2.7.3</version> 
+</dependency>
+```
+
+
+
+在SpringCache中提供了很多缓存操作的注解，常见的是以下的几个：
+
+| **注解**       | **说明**                                                     |
+| -------------- | ------------------------------------------------------------ |
+| @EnableCaching | 开启缓存注解功能，通常加在启动类上                           |
+| @Cacheable     | 在方法执行前先查询缓存中是否有数据，如果有数据，则直接返回缓存数据；如果没有缓存数据，调用方法并将方法返回值放到缓存中 |
+| @CachePut      | 将方法的返回值放到缓存中                                     |
+| @CacheEvict    | 将一条或多条数据从缓存中删除                                 |
+
+在spring boot项目中，使用缓存技术只需在项目中导入相关缓存技术的依赖包，并在启动类上使用@EnableCaching开启缓存支持即可。
+
+
+
+
