@@ -700,4 +700,24 @@ HttpClient 是Apache Jakarta Common 下的子项目，可以用来提供高效�
 1. 调用 [wx.login()](https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.login.html) 获取 **临时登录凭证code** ，并回传到开发者服务器。
 2. 调用 [auth.code2Session](https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html) 接口，换取 **用户唯一标识 OpenID** 、 用户在微信开放平台帐号下的**唯一标识UnionID**（若当前小程序已绑定到微信开放平台帐号） 和 **会话密钥 session_key**。
 
+## day07
+实现缓存菜品、缓存套餐、添加购物车、查看购物车、清空购物车。
 
+### 1.Redis缓存
+用户端小程序展示的菜品数据都是通过查询数据库获得，如果用户端访问量比较大，数据库访问压力随之增大。  
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/f10a6474-a9bb-4b59-996d-a809234d3af7)  
+通过Redis来缓存菜品数据，减少数据库查询操作。Redis是基于内存的，快！程序的逻辑时，在查询时先判断缓存中有没有数据，没有再去数据库中取。
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/d50fcb39-fd82-4ae4-b8f0-ece2035db0c1)
+**缓存逻辑分析：**
+- 每个分类下的菜品保存一份缓存数据
+- 数据库中菜品数据有变更时清理缓存数据
+
+关于数据库数据变更之后，需要考虑Redis和数据库的一致型问题，很明白有两个操作需要进行：删除缓存和更改数据库。但考虑一个问题，是先操作缓存还是先操作数据库？  
+
+先操作缓存：
+下图中2是删除缓存之后修改数据库的操作，可是她因为某些原因，卡住了。  另一个线程此时查询，发现缓存中没有数据，去数据库中找到了未修改的数据，并且存在缓存中。之后，2操作终于到达修改了数据库，但是缓存中已经存上了旧数据。
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/988b453f-28df-4873-94ec-96b33233040b)
+解决方法：延迟双删。修改数据库之后，隔几百毫秒再次删除缓存。
+
+先操作数据库：可以保证最终数据一致性，建议先操作数据库，然后删除Redis缓存
+![image](https://github.com/ZhengYuTiiing/sky-take-out/assets/113531299/8c354ae3-6479-4866-9853-47fb5dc4057d)
