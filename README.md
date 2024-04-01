@@ -732,7 +732,8 @@ Spring Cache 是一个框架，实现了基于注解的缓存功能，只需要�
 ```xml
 <dependency>
 	<groupId>org.springframework.boot</groupId>
-	<artifactId>spring-boot-starter-cache</artifactId>  		            		       	 <version>2.7.3</version> 
+	<artifactId>spring-boot-starter-cache</artifactId>
+	<version>2.7.3</version> 
 </dependency>
 ```
 
