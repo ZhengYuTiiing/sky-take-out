@@ -752,4 +752,374 @@ Spring Cache 是一个框架，实现了基于注解的缓存功能，只需要�
 
 
 
+## day10
+- day08完成：导入地址簿功能代码、用户下单 、订单支付。都是CRUD。其中订单支付没有真正实现，因为个人注册的小程序无法使用微信小程序的支付接口。
+因此将前端点击确认支付改成弹出提示框，再次点击确认的话就相当于支付成功，发送paySecuuess请求。具体参照链接https://www.bilibili.com/read/cv27675417/?spm_id_from=333.999.0.0&jump_opus=1 ，这里谢谢大佬！  
+- day09 完成用户端历史订单模块： 查询历史订单、查询订单详情 、取消订单 、再来一单。  
+商家端订单管理模块： 订单搜索、 各个状态的订单数量统计 、查询订单详情 、接单 、拒单 、取消订单 、派送订单 、完成订单。  
+- day10实现： 订单状态定时处理、来单提醒、客户催单。学习到了Spring Task、cron表达式
+
+### 1. Spring Task（订单状态定时处理）
+**Spring Task** 是Spring框架提供的任务调度工具，可以按照约定的时间自动执行某个代码逻辑。
+**作用**：定时自动执行某段Java代码
+#### 1.1 cron表达式
+**cron表达式**其实就是一个字符串，通过cron表达式可以**定义任务触发的时间**， 分为6或7个域，由空格分隔开，每个域代表一个含义。
+每个域的含义分别为：秒、分钟、小时、日、月、周、年(可选)
+**举例：**
+2022年10月12日上午9点整 对应的cron表达式为：**0 0 9 12 10 ? 2022**  
+![img_1.png](img_1.png)  
+**说明：**一般**日**和**周**的值不同时设置，其中一个设置，另一个用？表示。
+cron表达式在线生成器：https://cron.qqe2.com/  
+在大部分使用cron的场景下， - * / ? 这几个常用字符就可以满足我们的需求了。
+• 【*】：每的意思。在不同的字段上，就代表每秒，每分，每小时等。  
+• 【-】：指定值的范围。比如[1-10]，在秒字段里就是每分钟的第1到10秒，在分就是每小时的第1到10分钟，以此类推。  
+• 【,】：指定某几个值。比如[2,4,5]，在秒字段里就是每分钟的第2，第4，第5秒，以此类推。  
+• 【/】：指定值的起始和增加幅度。比如[3/5]，在秒字段就是每分钟的第3秒开始，每隔5秒生效一次，也就是第3秒、8秒、13秒，以此类推。  
+• 【?】：仅用于【日】和【周】字段。因为在指定某日和周几的时候，这两个值实际上是冲突的，所以需要用【?】标识不生效的字段。比如【0 1 * * * ?】就代表每年每月每日每小时的1分0秒触发任务。这里的周就没有效果了。  
+![img_2.png](img_2.png)
+
+#### 1.2 案例
+**编写定时任务类：**
+
+```java
+/**
+ * 自定义定时任务类
+ */
+@Component
+@Slf4j
+public class MyTask {
+
+    /**
+     * 定时任务 每隔5秒触发一次
+     */
+    @Scheduled(cron = "0/5 * * * * ?")
+    public void executeTask(){
+        log.info("定时任务开始执行：{}",new Date());
+    }
+}
+```
+
+**开启任务调度：**
+
+启动类添加注解 @EnableScheduling
+
+```java
+
+@SpringBootApplication
+@EnableTransactionManagement //开启注解方式的事务管理
+@Slf4j
+@EnableCaching
+@EnableScheduling
+public class SkyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SkyApplication.class, args);
+        log.info("server started");
+    }
+}
+```
+
+
+### 2. WebSocket
+
+WebSocket 是基于 TCP 的一种新的**网络协议**。它实现了浏览器与服务器全双工通信——浏览器和服务器只需要完成一次握手，两者之间就可以创建**持久性**的连接， 并进行**双向**数据传输。
+
+**HTTP协议和WebSocket协议对比：**
+
+- HTTP是**短连接**
+- WebSocket是**长连接**
+- HTTP通信是**单向**的，基于请求响应模式
+- WebSocket支持**双向**通信
+- HTTP和WebSocket底层都是TCP连接  
+- 
+**实现步骤：**  
+1). 直接使用websocket.html页面作为WebSocket客户端  
+2). 导入WebSocket的maven坐标
+```xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-websocket</artifactId>
+</dependency>
+```
+3). 导入WebSocket服务端组件WebSocketServer，用于和客户端通信  
+直接导入到sky-server模块即可
+
+```java
+/**
+ * WebSocket服务
+ */
+@Component
+@ServerEndpoint("/ws/{sid}")
+public class WebSocketServer {
+    //存放会话对象
+    private static Map<String, Session> sessionMap = new HashMap();
+    /**
+     * 连接建立成功调用的方法
+     */
+    @OnOpen
+    public void onOpen(Session session, @PathParam("sid") String sid) {
+        System.out.println("客户端：" + sid + "建立连接");
+        sessionMap.put(sid, session);
+    }
+    /**
+     * 收到客户端消息后调用的方法
+     */
+    @OnMessage
+    public void onMessage(String message, @PathParam("sid") String sid) {
+        System.out.println("收到来自客户端：" + sid + "的信息:" + message);
+    }
+    /**
+     * 连接关闭调用的方法
+     */
+    @OnClose
+    public void onClose(@PathParam("sid") String sid) {
+        System.out.println("连接断开:" + sid);
+        sessionMap.remove(sid);
+    }
+    /**
+     * 群发
+     */
+    public void sendToAllClient(String message) {
+        Collection<Session> sessions = sessionMap.values();
+        for (Session session : sessions) {
+            try {
+                //服务器向客户端发送消息
+                session.getBasicRemote().sendText(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+4). 导入配置类WebSocketConfiguration，注册WebSocket的服务端组件
+```java
+/**
+ * WebSocket配置类，用于注册WebSocket的Bean
+ */
+@Configuration
+public class WebSocketConfiguration {
+    @Bean
+    public ServerEndpointExporter serverEndpointExporter() {
+        return new ServerEndpointExporter();
+    }
+}
+```
+5). 导入定时任务类WebSocketTask，定时向客户端推送数据  
+时向客户端推送数据(从资料中直接导入即可)
+
+```java
+@Component
+public class WebSocketTask {
+    @Autowired
+    private WebSocketServer webSocketServer;
+    /**
+     * 通过WebSocket每隔5秒向客户端发送消息
+     */
+    @Scheduled(cron = "0/5 * * * * ?")
+    public void sendMessageToClient() {
+        webSocketServer.sendToAllClient("这是来自服务端的消息：" + DateTimeFormatter.ofPattern("HH:mm:ss").format(LocalDateTime.now()));
+    }
+}
+```
+
+
+WebSocket用于实现来单提醒和催单功能。  
+- **设计思路：**
+- 通过WebSocket实现管理端页面和服务端保持长连接状态
+- 当客户支付后，调用WebSocket的相关API实现服务端向客户端推送消息
+- 客户端浏览器解析服务端推送的消息，判断是来单提醒还是客户催单，进行相应的消息提示和语音播报
+- 约定服务端发送给客户端浏览器的数据格式为JSON，字段包括：type，orderId，content
+    - type 为消息类型，1为来单提醒 2为客户催单
+    - orderId 为订单id
+    - content 为消息内容
+
+## day11
+本日实现数据统计，包括：营业额统计、用户统计、订单统计、销量排名Top10。了解前端用Apache ECharts对数据进行可视化。
+### Apache ECharts
+Apache ECharts 是一款基于 Javascript 的数据可视化图表库，提供直观，生动，可交互，可个性化定制的数据可视化图表。
+官网地址：https://echarts.apache.org/zh/index.html
+可实现：  
+1). 柱形图
+2). 饼形图
+3). 折线图  
+**总结**： 不管是哪种形式的图形，最本质的东西实际上是**数据**，它其实是对数据的一种可视化展示。
+
+
+#### 入门案例
+
+Apache Echarts官方提供的快速入门：https://echarts.apache.org/handbook/zh/get-started/
+
+**实现步骤：**  
+1). 引入echarts.js 文件  
+2). 为 ECharts 准备一个设置宽高的 DOM  
+3). 初始化echarts实例  
+4). 指定图表的配置项和数据  
+5). 使用指定的配置项和数据显示图表  
+
+**代码开发：**
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ECharts</title>
+    <!-- 引入刚刚下载的 ECharts 文件 -->
+    <script src="echarts.js"></script>
+  </head>
+  <body>
+    <!-- 为 ECharts 准备一个定义了宽高的 DOM -->
+    <div id="main" style="width: 600px;height:400px;"></div>
+    <script type="text/javascript">
+      // 基于准备好的dom，初始化echarts实例
+      var myChart = echarts.init(document.getElementById('main'));
+
+      // 指定图表的配置项和数据
+      var option = {
+        title: {
+          text: 'ECharts 入门示例'
+        },
+        tooltip: {},
+        legend: {
+          data: ['销量']
+        },
+        xAxis: {
+          data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子']
+        },
+        yAxis: {},
+        series: [
+          {
+            name: '销量',
+            type: 'bar',
+            data: [5, 20, 36, 10, 10, 20]
+          }
+        ]
+      };
+
+      // 使用刚指定的配置项和数据显示图表。
+      myChart.setOption(option);
+    </script>
+  </body>
+</html>
+```
+使用浏览器方式打开即可。  
+![img_3.png](img_3.png)
+**总结**： 使用Echarts，重点在于研究当前图表所需的数据格式。通常是需要后端提供符合格式要求的动态数据，然后响应给前端来展示图表。
+
+## day12
+今日实现：工作台展示的数据（今日数据、订单管理、菜品总览、套餐总览、订单信息）和导出运营数据Excel报表。其中到处excel报表使用Apache POI技术。
+### Apache POI
+Apache POI 是一个处理Miscrosoft Office各种文件格式的开源项目。简单来说就是，我们可以使用 POI 在 Java 程序中对Miscrosoft Office各种文件进行读写操作。
+一般情况下，POI 都是用于操作 Excel 文件。
+
+**Apache POI 的应用场景：**  
+- 银行网银系统导出交易明细
+- 各种业务系统导出Excel报表
+- 批量导入业务数据
+
+#### 入门案例
+Apache POI既可以将数据写入Excel文件，也可以读取Excel文件中的数据，接下来分别进行实现。  
+**Apache POI的maven坐标：**(项目中已导入)
+```xml
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi</artifactId>
+    <version>3.16</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml</artifactId>
+    <version>3.16</version>
+</dependency>
+```
+
+#### 1 将数据写入Excel文件
+
+**1). 代码开发**
+
+```java
+    /**
+     * 基于POI向Excel文件写入数据
+     */
+    public static void write() throws Exception{
+        //在内存中创建一个Excel文件对象
+        XSSFWorkbook excel = new XSSFWorkbook();
+        //创建Sheet页
+        XSSFSheet sheet = excel.createSheet("itcast");
+
+        //在Sheet页中创建行，0表示第1行
+        XSSFRow row1 = sheet.createRow(0);
+        //创建单元格并在单元格中设置值，单元格编号也是从0开始，1表示第2个单元格
+        row1.createCell(1).setCellValue("姓名");
+        row1.createCell(2).setCellValue("城市");
+
+        XSSFRow row2 = sheet.createRow(1);
+        row2.createCell(1).setCellValue("张三");
+        row2.createCell(2).setCellValue("北京");
+
+        XSSFRow row3 = sheet.createRow(2);
+        row3.createCell(1).setCellValue("李四");
+        row3.createCell(2).setCellValue("上海");
+
+        FileOutputStream out = new FileOutputStream(new File("D:\\itcast.xlsx"));
+        //通过输出流将内存中的Excel文件写入到磁盘上
+        excel.write(out);
+
+        //关闭资源
+        out.flush();
+        out.close();
+        excel.close();
+    }
+  
+```
+**2). 实现效果**
+在D盘中生成itcast.xlsx文件，创建名称为itcast的Sheet页，同时将内容成功写入。
+![img_4.png](img_4.png)
+
+#### 2 读取Excel文件中的数据
+**1). 代码开发**
+```java
+
+    /**
+     * 基于POI读取Excel文件
+     */
+    public static void read() throws Exception{
+        FileInputStream in = new FileInputStream(new File("D:\\itcast.xlsx"));
+        //通过输入流读取指定的Excel文件
+        XSSFWorkbook excel = new XSSFWorkbook(in);
+        //获取Excel文件的第1个Sheet页
+        XSSFSheet sheet = excel.getSheetAt(0);
+
+        //获取Sheet页中的最后一行的行号
+        int lastRowNum = sheet.getLastRowNum();
+
+        for (int i = 0; i <= lastRowNum; i++) {
+            //获取Sheet页中的行
+            XSSFRow titleRow = sheet.getRow(i);
+            //获取行的第2个单元格
+            XSSFCell cell1 = titleRow.getCell(1);
+            //获取单元格中的文本内容
+            String cellValue1 = cell1.getStringCellValue();
+            //获取行的第3个单元格
+            XSSFCell cell2 = titleRow.getCell(2);
+            //获取单元格中的文本内容
+            String cellValue2 = cell2.getStringCellValue();
+
+            System.out.println(cellValue1 + " " +cellValue2);
+        }
+        //关闭资源
+        in.close();
+        excel.close();
+    }
+```
+**2). 实现效果**
+将itcast.xlsx文件中的数据进行读取
+![img_5.png](img_5.png)
+
+
+## 最终感想
+孩子终于做完了应该项目，也许这是一个所谓的"烂大街"项目，但这的的确确让我有了不少收获，学习到了不少新的技术新的知识，希望我可以保持这份热爱学习的心！女里变成一名合格的、优秀的程序员！
+完结撒花*★,°*:.☆(￣▽￣)/$:*.°★* 。
+
+
 
